@@ -16,6 +16,7 @@ class LlamaVisionModelLoader:
     def __init__(self):
         self.llamaModelPath = None
         self.modelName = None
+        self.authToken = None
         self.visionModel = LlamaVisionModel()
         pass
 
@@ -23,8 +24,11 @@ class LlamaVisionModelLoader:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "modelName": (["unsloth/Llama-3.2-11B-Vision-Instruct"],), 
-                "llamaModelDirectory": (["LLAMA"],)
+                "modelName": (["unsloth/Llama-3.2-11B-Vision-Instruct", "meta-llama/Llama-3.2-11B-Vision-Instruct"],), 
+                "llamaModelDirectory": (["LLAMA"],),
+            },
+            "optional": {
+                "authToken": ("STRING", {"default": None}),
             }
         }
     
@@ -32,7 +36,7 @@ class LlamaVisionModelLoader:
     RETURN_TYPES = ("LlamaVisionModel",)
     FUNCTION = "load"
 
-    def load(self, modelName, llamaModelDirectory):
+    def load(self, modelName, llamaModelDirectory, authToken=None):
         basename = os.path.basename(modelName)
         model_checkpoint = os.path.join(folder_paths.models_dir, llamaModelDirectory, basename)
 
@@ -41,6 +45,7 @@ class LlamaVisionModelLoader:
                 modelName,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
+                use_auth_token=authToken
             )
 
             model.save_pretrained(model_checkpoint)
@@ -50,6 +55,7 @@ class LlamaVisionModelLoader:
                 model_checkpoint,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
+                use_auth_token=authToken
             )
 
         processor = AutoProcessor.from_pretrained(modelName)
