@@ -39,16 +39,20 @@ class LlamaVisionModelLoader:
     def load(self, modelName, llamaModelDirectory, authToken=None):
         basename = os.path.basename(modelName)
         model_checkpoint = os.path.join(folder_paths.models_dir, llamaModelDirectory, basename)
+        processor_checkpoint = os.path.join(folder_paths.models_dir, llamaModelDirectory, basename, "processor")
 
         if not os.path.exists(model_checkpoint):
             model = MllamaForConditionalGeneration.from_pretrained(
                 modelName,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
-                use_auth_token=authToken
+                token=authToken
             )
 
+            processor = AutoProcessor.from_pretrained(modelName, token=authToken)
+
             model.save_pretrained(model_checkpoint)
+            processor.save_pretrained()
 
         else:
             model = MllamaForConditionalGeneration.from_pretrained(
@@ -57,7 +61,7 @@ class LlamaVisionModelLoader:
                 device_map="auto"
             )
 
-        processor = AutoProcessor.from_pretrained(modelName, use_auth_token=authToken)
+            processor = AutoProcessor.from_pretrained(processor_checkpoint)
 
         self.visionModel.model = model
         self.visionModel.processor = processor

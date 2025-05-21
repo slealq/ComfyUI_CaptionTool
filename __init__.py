@@ -7,8 +7,14 @@
 
 from .nodes.VisionModel import LlamaVisionModelLoader
 from .nodes.Caption import CaptionTool
+from .nodes.CaptionResponseVisualizer import CaptionResponseVisualizer
+from .nodes.CaptionResponseSave import CaptionResponseSave
+from .nodes.Images import BatchImagesLoader
 
 NODE_CLASS_MAPPINGS = { 
     "LlamaVisionModelLoader": LlamaVisionModelLoader,
-    "CaptionTool": CaptionTool
+    "CaptionTool": CaptionTool,
+    "CaptionResponseVisualizer": CaptionResponseVisualizer,
+    "CaptionResponseSave" : CaptionResponseSave,
+    "BatchImagesLoader": BatchImagesLoader,
 }

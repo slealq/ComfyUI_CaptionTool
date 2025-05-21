@@ -1,6 +1,29 @@
 import torch
 from PIL import Image
-import numpy as np
+from .Images import ImageBatch
+from .utils import tensor2pil
+
+class ImageCaption:
+    def __init__(self, image, caption):
+        self.image = image
+        self.caption = caption
+
+class CaptionResponse:
+    def __init__(self):
+        self.image_captions = []
+
+    def add_caption(self, image : Image, caption : str):
+        imageCaption = ImageCaption(image, caption)
+
+        print("Added one caption")
+
+        self.image_captions.append(imageCaption)
+
+    def get_captions(self):
+        return self.image_captions
+
+    def clearCache(self):
+        self.image_captions = []
 
 class CaptionTool:
     def __init__(self):
@@ -9,19 +32,48 @@ class CaptionTool:
     @classmethod
     def INPUT_TYPES(s):
         return {
+            # Using LlamaVisionModel for the parameter name to avoid confusion with the model variable name
             "required": {
-                "vision_model": ("LlamaVisionModel",),
-                "image": ("IMAGE",),
+                "LlamaVisionModel": ("LlamaVisionModel",),
                 "max_new_tokens": ("INT", {"default": 1024, "min": 10, "max": 4096, "step": 1}),
                 "prompt":   ("STRING", {"multiline": True, "default": "A descriptive caption for this image"},),
+            },
+            "optional": {
+                "image": ("IMAGE",),
+                "batch_images": ("ImageBatch",),
             }
         }
 
-    CATEGORY = "CaptionTool/Loaders"
-    RETURN_TYPES = ("STRING",)
+    CATEGORY = "CaptionTool/Caption"
+    RETURN_TYPES = ("CaptionResponse",)
     FUNCTION = "gen"
-    def gen(self, vision_model, image, max_new_tokens, prompt): 
+    def gen(self, LlamaVisionModel, max_new_tokens, prompt, image=None, batch_images=None): 
 
+        image_batch = self._load_images(image, batch_images)
+
+        caption_response = CaptionResponse()
+
+        for image in image_batch.images:
+            pilImage = tensor2pil(image)
+
+            text_response = self._generate_caption(LlamaVisionModel, pilImage, max_new_tokens, prompt)
+            caption_response.add_caption(image, text_response)
+
+        return (caption_response,)
+    
+    def _load_images(self, image : torch.Tensor | None, batch_images : ImageBatch | None):
+        if image is not None:
+            image_batch = ImageBatch()
+            image_batch.images = [image]
+        elif batch_images is not None:
+            image_batch = batch_images
+        else:
+            raise ValueError("No image or batch_images provided")
+        
+        return image_batch
+        
+    def _generate_caption(self, vision_model, input_image : Image, max_new_tokens, prompt):
+        
         messages = [
             {"role": "user", "content": [
                 {"type": "image"},
@@ -29,8 +81,6 @@ class CaptionTool:
             ]}
         ]
         input_text = vision_model.processor.apply_chat_template(messages, add_generation_prompt=True)
-
-        input_image = self.tensor2pil(image)
 
         inputs = vision_model.processor(
             input_image,
@@ -47,7 +97,5 @@ class CaptionTool:
         end_idx = text_response.rfind("<|eot_id|>")
         text_response = text_response[start_idx:end_idx].strip()
 
-        return (text_response,)
-    
-    def tensor2pil(self, t_image: torch.Tensor)  -> Image:
-        return Image.fromarray(np.clip(255.0 * t_image.cpu().numpy().squeeze(), 0, 255).astype(np.uint8))
+        return text_response
+
