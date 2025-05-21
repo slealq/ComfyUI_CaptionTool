@@ -54,11 +54,10 @@ class LlamaVisionModelLoader:
             model = MllamaForConditionalGeneration.from_pretrained(
                 model_checkpoint,
                 torch_dtype=torch.bfloat16,
-                device_map="auto",
-                use_auth_token=authToken
+                device_map="auto"
             )
 
-        processor = AutoProcessor.from_pretrained(modelName)
+        processor = AutoProcessor.from_pretrained(modelName, use_auth_token=authToken)
 
         self.visionModel.model = model
         self.visionModel.processor = processor
