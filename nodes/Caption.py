@@ -53,11 +53,17 @@ class CaptionTool:
 
         caption_response = CaptionResponse()
 
+        count = 0
+        total_images = len(image_batch.images)
+
         for image in image_batch.images:
             pilImage = tensor2pil(image)
 
             text_response = self._generate_caption(LlamaVisionModel, pilImage, max_new_tokens, prompt)
             caption_response.add_caption(image, text_response)
+
+            print(f"Have calculated {count} captions from the {total_images} total ones. Progress is {(count*100.00)/total_images} %")
+            count += 1
 
         return (caption_response,)
     
